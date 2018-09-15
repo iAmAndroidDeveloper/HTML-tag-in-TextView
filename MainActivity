@@ -1,0 +1,89 @@
+public class MainActivity extends AppCompatActivity implements Html.ImageGetter {
+
+    TextView tv_text;
+    
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+      String source = "      <h1>This is heading 1</h1>\n" +
+                "      <h2>This is heading 2</h2>\n" +
+                "      <h3>This is heading 3</h3>\n" +
+                "      <h4>This is heading 4</h4>\n" +
+                "      <h5>This is heading 5</h5>\n" +
+                "      <h6>This is heading 6</h6>\n" +
+                "   this is a test of <b>ImageGetter</b> it contains " +
+                "HTML <small> Element. The HTML <small> element defines smaller text: HTML <mark> Element. The HTML <mark> element defines marked or highlighted text: HTML <del> Element. The HTML <del> element defines deleted (removed) text. HTML <ins> Element. HTML <sub> Element. HTML <sup> Element. <br/>" +
+                "<img src=https://cdn-images-1.medium.com/max/800/1*26WzvNZ6aQJFSG5A0MoTnA.png><br/>and<br/>" +
+                "<img src=https://www.hidroh.com/assets/img/rendering_textview.png><br/>and<br/>" +
+                "<img src=https://cdn-images-1.medium.com/max/800/1*_5aVVEC48XXdLOV0bhPPcw.png><br/>and<br/>" +
+                "<img src=https://pimg-guru.com/LpImages/testimonials/photo-ed-bagley.jpg><br/>and<br/>" +
+                "<img src=https://buy-addons.com/store/images/thumbnails/90/74/detailed/1/Banner_590_300_upl9-hn.png><br/>and<br/>" +
+                "<img src=https://cdn-images-1.medium.com/max/2000/1*b0QMqRIRO-i8MhdqbSL7Tg.jpeg>";
+
+        Spanned spanned = Html.fromHtml(source, this, null);
+        tv_text = findViewById(R.id.tv_text);
+        tv_text.setText(spanned);
+    }
+
+    @Override
+    public Drawable getDrawable(String source) {
+        LevelListDrawable d = new LevelListDrawable();
+        Drawable empty = getResources().getDrawable(R.drawable.ic_launcher_background);
+        d.addLevel(0, 0, empty);
+        d.setBounds(0, 0, empty.getIntrinsicWidth(), empty.getIntrinsicHeight());
+
+        new LoadImage().execute(source, d);
+
+        return d;
+    }
+
+    class LoadImage extends AsyncTask<Object, Void, Bitmap> {
+
+        private LevelListDrawable mDrawable;
+
+        @Override
+        protected Bitmap doInBackground(Object... params) {
+            String source = (String) params[0];
+            mDrawable = (LevelListDrawable) params[1];
+            // Log.d(TAG, "doInBackground " + source);
+            try {
+                InputStream is = new URL(source).openStream();
+                return BitmapFactory.decodeStream(is);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            //Log.d(TAG, "onPostExecute drawable " + mDrawable);
+            //  Log.d(TAG, "onPostExecute bitmap " + bitmap);
+            if (bitmap != null) {
+                BitmapDrawable d = new BitmapDrawable(bitmap);
+                Point size = new Point();
+                getWindowManager().getDefaultDisplay().getSize(size);
+
+                if(bitmap.getWidth()>size.x) {
+                    //int multiplier = size.x / bitmap.getWidth();
+                    mDrawable.addLevel(1, 1, d);
+                    mDrawable.setBounds(0, 0, size.x , bitmap.getHeight());
+                    mDrawable.setLevel(1);
+                }else
+                {
+                    mDrawable.addLevel(1, 1, d);
+                    mDrawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                    mDrawable.setLevel(1);
+                }
+                // i don't know yet a better way to refresh TextView
+                // mTv.invalidate() doesn't work as expected
+                CharSequence t = tv_text.getText();
+                tv_text.setText(t);
+            }
+        }
+    }
